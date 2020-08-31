@@ -4,9 +4,6 @@ export default class extends Controller {
   public async callback() {
     const { ctx } = this;
 
-    const config = ctx.app.config.wechat;
-    ctx.mySession.wechatConfig = config;
-
     // 回调校验
     if (ctx.method === 'GET') {
       const verifyResult = await ctx.service.wechat.callbackVerify();

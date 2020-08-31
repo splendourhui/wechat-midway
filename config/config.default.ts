@@ -16,10 +16,10 @@ export default (appInfo: EggAppInfo) => {
 
   const bizConfig = {
     wechat: {
-      appId: 'wx36f20fc356c772e0',
-      secret: '1889bfef0ab148975b474a03d7591948',
-      token: '928797_l',
-      encodingAESKey: 'UtwKgZGTobw80o50OOlNhM2LObEyzPCG3pAlaRIi2UE'
+      appId: 'xxx',
+      secret: 'xxx',
+      token: 'xxx',
+      encodingAESKey: 'xxx'
     }
   };
 

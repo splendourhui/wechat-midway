@@ -78,7 +78,7 @@ export default class extends Service {
       nonce,
       encrypt_type
     } = ctx.query;
-    const config = ctx.mySession.wechatConfig;
+    const config = ctx.app.config.wechat;
 
     // 判断是否加密传输
     const encrypted = !!(encrypt_type && encrypt_type === 'aes' && signature);
@@ -140,7 +140,7 @@ export default class extends Service {
       nonce,
       encrypt_type
     } = ctx.query;
-    const config = ctx.mySession.wechatConfig;
+    const config = ctx.app.config.wechat;
 
     // 判断是否加密传输
     const encrypted = !!(encrypt_type && encrypt_type === 'aes' && signature);
@@ -227,7 +227,7 @@ export default class extends Service {
     }
 
     const { msg_signature: signature, encrypt_type } = ctx.query;
-    const config = ctx.mySession.wechatConfig;
+    const config = ctx.app.config.wechat;
 
     // 判断是否加密传输
     const encrypted = !!(encrypt_type && encrypt_type === 'aes' && signature);
