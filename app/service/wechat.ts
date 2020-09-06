@@ -4,68 +4,72 @@ import * as xml2js from 'xml2js';
 import * as ejs from 'ejs';
 import { IMessage } from '../interface/message';
 
-const tpl = [
-  '<xml>',
-  '<ToUserName><![CDATA[<%-toUsername%>]]></ToUserName>',
-  '<FromUserName><![CDATA[<%-fromUsername%>]]></FromUserName>',
-  '<CreateTime><%=createTime%></CreateTime>',
-  '<MsgType><![CDATA[<%=msgType%>]]></MsgType>',
-  '<% if (msgType === "news") { %>',
-  '<ArticleCount><%=content.length%></ArticleCount>',
-  '<Articles>',
-  '<% content.forEach(function(item){ %>',
-  '<item>',
-  '<Title><![CDATA[<%-item.title%>]]></Title>',
-  '<Description><![CDATA[<%-item.description%>]]></Description>',
-  '<PicUrl><![CDATA[<%-item.picUrl || item.picurl || item.pic %>]]></PicUrl>',
-  '<Url><![CDATA[<%-item.url%>]]></Url>',
-  '</item>',
-  '<% }); %>',
-  '</Articles>',
-  '<% } else if (msgType === "music") { %>',
-  '<Music>',
-  '<Title><![CDATA[<%-content.title%>]]></Title>',
-  '<Description><![CDATA[<%-content.description%>]]></Description>',
-  '<MusicUrl><![CDATA[<%-content.musicUrl || content.url %>]]></MusicUrl>',
-  '<HQMusicUrl><![CDATA[<%-content.hqMusicUrl || content.hqUrl %>]]></HQMusicUrl>',
-  '</Music>',
-  '<% } else if (msgType === "voice") { %>',
-  '<Voice>',
-  '<MediaId><![CDATA[<%-content.mediaId%>]]></MediaId>',
-  '</Voice>',
-  '<% } else if (msgType === "image") { %>',
-  '<Image>',
-  '<MediaId><![CDATA[<%-content.mediaId%>]]></MediaId>',
-  '</Image>',
-  '<% } else if (msgType === "video") { %>',
-  '<Video>',
-  '<MediaId><![CDATA[<%-content.mediaId%>]]></MediaId>',
-  '<Title><![CDATA[<%-content.title%>]]></Title>',
-  '<Description><![CDATA[<%-content.description%>]]></Description>',
-  '</Video>',
-  '<% } else if (msgType === "transfer_customer_service") { %>',
-  '<% if (content && content.kfAccount) { %>',
-  '<TransInfo>',
-  '<KfAccount><![CDATA[<%-content.kfAccount%>]]></KfAccount>',
-  '</TransInfo>',
-  '<% } %>',
-  '<% } else { %>',
-  '<Content><![CDATA[<%-content%>]]></Content>',
-  '<% } %>',
-  '</xml>'
-].join('');
+// // 原始 xml 模板
+// const tpl = [
+//   '<xml>',
+//   '<ToUserName><![CDATA[<%-toUsername%>]]></ToUserName>',
+//   '<FromUserName><![CDATA[<%-fromUsername%>]]></FromUserName>',
+//   '<CreateTime><%=createTime%></CreateTime>',
+//   '<MsgType><![CDATA[<%=msgType%>]]></MsgType>',
+//   '<% if (msgType === "news") { %>',
+//   '<ArticleCount><%=content.length%></ArticleCount>',
+//   '<Articles>',
+//   '<% content.forEach(function(item){ %>',
+//   '<item>',
+//   '<Title><![CDATA[<%-item.title%>]]></Title>',
+//   '<Description><![CDATA[<%-item.description%>]]></Description>',
+//   '<PicUrl><![CDATA[<%-item.picUrl || item.picurl || item.pic %>]]></PicUrl>',
+//   '<Url><![CDATA[<%-item.url%>]]></Url>',
+//   '</item>',
+//   '<% }); %>',
+//   '</Articles>',
+//   '<% } else if (msgType === "music") { %>',
+//   '<Music>',
+//   '<Title><![CDATA[<%-content.title%>]]></Title>',
+//   '<Description><![CDATA[<%-content.description%>]]></Description>',
+//   '<MusicUrl><![CDATA[<%-content.musicUrl || content.url %>]]></MusicUrl>',
+//   '<HQMusicUrl><![CDATA[<%-content.hqMusicUrl || content.hqUrl %>]]></HQMusicUrl>',
+//   '</Music>',
+//   '<% } else if (msgType === "voice") { %>',
+//   '<Voice>',
+//   '<MediaId><![CDATA[<%-content.mediaId%>]]></MediaId>',
+//   '</Voice>',
+//   '<% } else if (msgType === "image") { %>',
+//   '<Image>',
+//   '<MediaId><![CDATA[<%-content.mediaId%>]]></MediaId>',
+//   '</Image>',
+//   '<% } else if (msgType === "video") { %>',
+//   '<Video>',
+//   '<MediaId><![CDATA[<%-content.mediaId%>]]></MediaId>',
+//   '<Title><![CDATA[<%-content.title%>]]></Title>',
+//   '<Description><![CDATA[<%-content.description%>]]></Description>',
+//   '</Video>',
+//   '<% } else if (msgType === "transfer_customer_service") { %>',
+//   '<% if (content && content.kfAccount) { %>',
+//   '<TransInfo>',
+//   '<KfAccount><![CDATA[<%-content.kfAccount%>]]></KfAccount>',
+//   '</TransInfo>',
+//   '<% } %>',
+//   '<% } else { %>',
+//   '<Content><![CDATA[<%-content%>]]></Content>',
+//   '<% } %>',
+//   '</xml>'
+// ].join('');
 
-const compiled = ejs.compile(tpl);
+// // 使用 ejs 编译模板得出原始 xml 字符串
+// const compiled = ejs.compile(tpl);
 
-const wrapTpl =
-  '<xml>' +
-  '<Encrypt><![CDATA[<%-encrypt%>]]></Encrypt>' +
-  '<MsgSignature><![CDATA[<%-signature%>]]></MsgSignature>' +
-  '<TimeStamp><%-timestamp%></TimeStamp>' +
-  '<Nonce><![CDATA[<%-nonce%>]]></Nonce>' +
-  '</xml>';
+// // 加密 xml 模板
+// const wrapTpl =
+//   '<xml>' +
+//   '<Encrypt><![CDATA[<%-encrypt%>]]></Encrypt>' +
+//   '<MsgSignature><![CDATA[<%-signature%>]]></MsgSignature>' +
+//   '<TimeStamp><%-timestamp%></TimeStamp>' +
+//   '<Nonce><![CDATA[<%-nonce%>]]></Nonce>' +
+//   '</xml>';
 
-const encryptWrap = ejs.compile(wrapTpl);
+// // 使用 ejs 编译模板得出加密后的 xml 字符串
+// const encryptWrap = ejs.compile(wrapTpl);
 
 export default class extends Service {
   // 微信回调校验
@@ -196,26 +200,63 @@ export default class extends Service {
     });
   }
 
+  // 获取原始回复 xml
+  private compileReply(info) {
+    return ejs.compile(
+      [
+        '<xml>',
+        '<ToUserName><![CDATA[<%-toUsername%>]]></ToUserName>',
+        '<FromUserName><![CDATA[<%-fromUsername%>]]></FromUserName>',
+        '<CreateTime><%=createTime%></CreateTime>',
+        '<MsgType><![CDATA[<%=msgType%>]]></MsgType>',
+        '<% if (msgType === "text") { %>',
+        '<Content><![CDATA[<%-content%>]]></Content>',
+        '<% } %>',
+        '</xml>'
+      ].join('')
+    )(info);
+  }
+
+  // 获取加密 xml
+  private compileWrap(wrap) {
+    return ejs.compile(
+      [
+        '<xml>',
+        '<Encrypt><![CDATA[<%-encrypt%>]]></Encrypt>',
+        '<MsgSignature><![CDATA[<%-signature%>]]></MsgSignature>',
+        '<TimeStamp><%-timestamp%></TimeStamp>',
+        '<Nonce><![CDATA[<%-nonce%>]]></Nonce>',
+        '</xml>'
+      ].join('')
+    )(wrap);
+  }
+
   // 将回复内容转换为微信需要的 xml 格式
   private getReplyXml(content, fromUsername, toUsername) {
     const info: any = {};
     let type = 'text';
     info.content = content || '';
-    if (Array.isArray(content)) {
-      type = 'news';
-    } else if (typeof content === 'object') {
+    if (typeof content === 'object') {
       if (content.hasOwnProperty('type')) {
         type = content.type;
         info.content = content.content;
-      } else {
-        type = 'music';
       }
     }
+    // if (Array.isArray(content)) {
+    //   type = 'news';
+    // } else if (typeof content === 'object') {
+    //   if (content.hasOwnProperty('type')) {
+    //     type = content.type;
+    //     info.content = content.content;
+    //   } else {
+    //     type = 'music';
+    //   }
+    // }
     info.msgType = type;
     info.createTime = new Date().getTime();
     info.toUsername = toUsername;
     info.fromUsername = fromUsername;
-    return compiled(info);
+    return this.compileReply(info);
   }
 
   // 将 json 或者 string 格式的内容转换为微信需要的 xml 格式
@@ -238,16 +279,19 @@ export default class extends Service {
 
     const { message } = ctx.mySession;
 
+    // 组装 xml
     const xml = this.getReplyXml(
       content,
       message.ToUserName,
       message.FromUserName
     );
 
+    // 不需加密时，返回原始 xml
     if (!encrypted) {
       return xml;
     }
 
+    // 组装加密 xml
     const wrap: any = {};
     wrap.encrypt = cryptor.encrypt(xml);
     wrap.nonce = parseInt((Math.random() * 100000000000) as any, 10);
@@ -257,6 +301,6 @@ export default class extends Service {
       wrap.nonce,
       wrap.encrypt
     );
-    return encryptWrap(wrap);
+    return this.compileWrap(wrap);
   }
 }
