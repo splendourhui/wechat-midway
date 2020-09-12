@@ -14,17 +14,21 @@ export default (appInfo: EggAppInfo) => {
     }
   };
 
-  const bizConfig = {
-    wechat: {
-      appId: 'xxx',
-      secret: 'xxx',
-      token: 'xxx',
-      encodingAESKey: 'xxx'
+  config.wechat = {
+    appId: 'xxx',
+    secret: 'xxx',
+    token: 'xxx',
+    encodingAESKey: 'xxx'
+  };
+
+  config.redis = {
+    client: {
+      port: 6379,
+      host: 'xxx',
+      password: 'xxx',
+      db: 0
     }
   };
 
-  return {
-    ...config,
-    ...bizConfig
-  };
+  return config;
 };

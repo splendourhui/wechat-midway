@@ -29,5 +29,6 @@ declare module 'egg' {
     static?: EggPluginItem;
     jsonp?: EggPluginItem;
     view?: EggPluginItem;
+    redis?: EggPluginItem;
   }
 }

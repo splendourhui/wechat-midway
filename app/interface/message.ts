@@ -1,7 +1,7 @@
 export interface IMessage {
   createdTime: string;
   userId: string;
-  msgType?: 'voice' | 'image' | 'video';
+  msgType?: 'text' | 'voice' | 'image' | 'video';
   title?: string;
   content?: string;
   // 语音识别结果
