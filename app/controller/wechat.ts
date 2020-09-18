@@ -52,6 +52,7 @@ export default class extends Controller {
       //   ]
       // });
 
+      // eg: 使用客服消息接口主动发送消息
       // 先给微信服务器一个响应
       ctx.body = await ctx.service.wechat.adapter.encodeMsg('');
       ctx.service.wechat.message.typing(message, true);

@@ -14,6 +14,13 @@ export default class extends Service {
     return result;
   }
 
+  /**
+   * 上传媒体文件
+   * @param type 媒体类型，参考微信官方文档
+   * @param buffer 媒体文件流
+   * @param filename 文件名
+   * @param contentType content-type
+   */
   public async uploadMedia(type, buffer, filename, contentType) {
     const { ctx } = this;
     const { token } = await ctx.service.wechat.util.getAccessToken();

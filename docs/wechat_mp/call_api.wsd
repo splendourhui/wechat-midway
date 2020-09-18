@@ -1,0 +1,16 @@
+@startuml call_api
+
+(*) --> "服务启动"
+--> "准备调用微信 API"
+--> "尝试获取缓存中的 access_token"
+if "获取到有效的 access_token" then
+  -->[Y] "调用 API"
+else
+  -->[N] "调用 API 获取 access_token"
+  --> "返回新的 access_token"
+  --> "缓存 access_token"
+  -->"调用 API"
+endif
+-->(*)
+
+@enduml
