@@ -9,6 +9,7 @@ type AutoInstanceType<T, U = T extends CanExportFunc ? T : T extends AnyFunc ? R
 import ExportUtilsCache from '../../../app/service/utils/cache';
 import ExportWechatAdapter from '../../../app/service/wechat/adapter';
 import ExportWechatMedia from '../../../app/service/wechat/media';
+import ExportWechatMessage from '../../../app/service/wechat/message';
 import ExportWechatUtil from '../../../app/service/wechat/util';
 
 declare module 'egg' {
@@ -19,6 +20,7 @@ declare module 'egg' {
     wechat: {
       adapter: AutoInstanceType<typeof ExportWechatAdapter>;
       media: AutoInstanceType<typeof ExportWechatMedia>;
+      message: AutoInstanceType<typeof ExportWechatMessage>;
       util: AutoInstanceType<typeof ExportWechatUtil>;
     }
   }
