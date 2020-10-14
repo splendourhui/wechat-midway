@@ -30,5 +30,7 @@ export default (appInfo: EggAppInfo) => {
     }
   };
 
+  config.host = 'http://yourhost.com';
+
   return config;
 };
