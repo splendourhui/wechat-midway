@@ -3,11 +3,13 @@
 
 import 'egg';
 import ExportHome from '../../../app/controller/home';
+import ExportMini from '../../../app/controller/mini';
 import ExportWechat from '../../../app/controller/wechat';
 
 declare module 'egg' {
   interface IController {
     home: ExportHome;
+    mini: ExportMini;
     wechat: ExportWechat;
   }
 }

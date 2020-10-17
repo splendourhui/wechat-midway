@@ -1,5 +1,4 @@
 import { Service } from 'egg';
-import * as WXBizMsgCrypt from 'wechat-crypto';
 import * as xml2js from 'xml2js';
 import * as ejs from 'ejs';
 import { IMessage } from '../../interface/message';
@@ -9,30 +8,16 @@ export default class extends Service {
   public async callbackVerify(): Promise<{ message: string } | void> {
     const { ctx } = this;
     const {
-      echostr,
-      msg_signature: signature,
+      signature,
+      cryptor,
       timestamp,
       nonce,
-      encrypt_type
-    } = ctx.query;
-    const config = ctx.mySession.config;
-
-    // 判断是否加密传输
-    const encrypted = !!(encrypt_type && encrypt_type === 'aes' && signature);
-
-    if (!encrypted) {
-      return { message: echostr };
-    }
-
-    // 使用官方提供的包进行验证和解密
-    const cryptor = encrypted
-      ? new WXBizMsgCrypt(config.token, config.encodingAESKey, config.appId)
-      : {};
+      echostr
+    } = await ctx.service.enterprise.util.getParams();
 
     if (signature !== cryptor.getSignature(timestamp, nonce, echostr)) {
-      return;
+      ctx.body = '';
     }
-
     return cryptor.decrypt(echostr);
   }
 
@@ -72,27 +57,19 @@ export default class extends Service {
   public async decodeMsg(): Promise<IMessage> {
     const { ctx } = this;
     const {
-      msg_signature: signature,
+      signature,
+      cryptor,
       timestamp,
-      nonce,
-      encrypt_type
-    } = ctx.query;
-    const config = ctx.mySession.config;
-
-    // 判断是否加密传输
-    const encrypted = !!(encrypt_type && encrypt_type === 'aes' && signature);
-
-    const cryptor = encrypted
-      ? new WXBizMsgCrypt(config.token, config.encodingAESKey, config.appId)
-      : {};
+      nonce
+    } = await ctx.service.enterprise.util.getParams();
 
     return new Promise((resolve, reject) => {
       let data = '';
       ctx.req.setEncoding('utf8');
-      ctx.req.on('data', (chunk: string) => {
+      ctx.req.on('data', chunk => {
         data += chunk;
       });
-      ctx.req.on('error', (err: Error) => {
+      ctx.req.on('error', err => {
         reject(err);
       });
       ctx.req.on('end', () => {
@@ -100,15 +77,8 @@ export default class extends Service {
           if (err) {
             reject(new Error('xml 解析失败'));
           }
-          const originMessage: any = this.formatMessage(result.xml);
-          if (!encrypted) {
-            // 不加密时，originMessage 已经是解析好的参数
-            ctx.mySession.message = originMessage;
-            resolve(this.mapMsg(originMessage));
-            return;
-          }
-
-          const encryptMessage = originMessage.Encrypt;
+          const xml: any = this.formatMessage(result.xml);
+          const encryptMessage = xml.Encrypt;
           if (
             signature !== cryptor.getSignature(timestamp, nonce, encryptMessage)
           ) {
@@ -119,6 +89,7 @@ export default class extends Service {
           if (messageWrapXml === '') {
             reject(new Error('xml 解析失败'));
           }
+          ctx.mySession.xml = messageWrapXml;
 
           xml2js.parseString(messageWrapXml, { trim: true }, (err, result) => {
             if (err) {
@@ -233,31 +204,14 @@ export default class extends Service {
       return '';
     }
 
-    const { msg_signature: signature, encrypt_type } = ctx.query;
-    const config = ctx.mySession.config;
-
-    // 判断是否加密传输
-    const encrypted = !!(encrypt_type && encrypt_type === 'aes' && signature);
-
-    const cryptor = encrypted
-      ? new WXBizMsgCrypt(config.token, config.encodingAESKey, config.appId)
-      : {};
-
     const { message } = ctx.mySession;
 
-    // 组装 xml
     const xml = this.getReplyXml(
       content,
       message.ToUserName,
       message.FromUserName
     );
-
-    // 不需加密时，返回原始 xml
-    if (!encrypted) {
-      return xml;
-    }
-
-    // 组装加密 xml
+    const { cryptor } = await ctx.service.enterprise.util.getParams();
     const wrap: any = {};
     wrap.encrypt = cryptor.encrypt(xml);
     wrap.nonce = parseInt((Math.random() * 100000000000) as any, 10);

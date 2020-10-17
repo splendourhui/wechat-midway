@@ -4,36 +4,37 @@ import * as uuid from 'uuid';
 export default class extends Controller {
   public async callback() {
     const { ctx } = this;
+    const { type } = ctx.params;
 
     // 回调校验
     if (ctx.method === 'GET') {
-      const verifyResult = await ctx.service.wechat.adapter.callbackVerify();
+      const verifyResult = await ctx.service[type].adapter.callbackVerify();
       ctx.body = verifyResult ? verifyResult.message : '';
       return;
     }
 
     // 接收消息
     try {
-      const message = await ctx.service.wechat.adapter.decodeMsg();
+      const message = await ctx.service[type].adapter.decodeMsg();
       ctx.logger.info('Get message from wechat', message);
 
       // 当用户消息类型为图片、语音、视频类型时，微信回调一个 mediaId
       if (message.mediaId) {
         // 获取媒体文件流
-        const buffer = await ctx.service.wechat.media.getMedia(message.mediaId);
+        const buffer = await ctx.service[type].media.getMedia(message.mediaId);
         // 对媒体文件流做一些处理，例如转存到本地
         console.log(buffer.data);
       }
 
-      // 正常情况下，服务端需要先将媒体文件通过 ctx.service.wechat.media.uploadMedia 方法上传至微信服务器获取 mediaId
+      // 正常情况下，服务端需要先将媒体文件通过 ctx.service[type].media.uploadMedia 方法上传至微信服务器获取 mediaId
       // eg: 将用户原始消息直接回复
       // if (message.msgType === 'text') {
-      //   ctx.body = await ctx.service.wechat.adapter.encodeMsg({
+      //   ctx.body = await ctx.service[type].adapter.encodeMsg({
       //     type: 'text',
       //     content: message.content
       //   });
       // } else {
-      //   ctx.body = await ctx.service.wechat.adapter.encodeMsg({
+      //   ctx.body = await ctx.service[type].adapter.encodeMsg({
       //     type: message.msgType,
       //     content: {
       //       mediaId: message.mediaId
@@ -42,7 +43,7 @@ export default class extends Controller {
       // }
 
       // eg: 图文消息回复
-      // ctx.body = await ctx.service.wechat.adapter.encodeMsg({
+      // ctx.body = await ctx.service[type].adapter.encodeMsg({
       //   type: 'news',
       //   content: [
       //     {
@@ -53,14 +54,14 @@ export default class extends Controller {
       //   ]
       // });
 
-      // eg: 使用客服消息接口主动发送消息
+      // eg: 使用消息接口主动发送消息
       // 先给微信服务器一个响应
-      ctx.body = await ctx.service.wechat.adapter.encodeMsg('');
-      ctx.service.wechat.message.typing(message, true);
+      ctx.body = await ctx.service[type].adapter.encodeMsg('');
+      ctx.service[type].message.typing(message, true);
       // 模拟一段时间的处理后，给用户主动推送消息
       setTimeout(() => {
-        ctx.service.wechat.message.typing(message, false);
-        ctx.service.wechat.message.sendTextMsg({
+        ctx.service[type].message.typing(message, false);
+        ctx.service[type].message.sendTextMsg({
           ...message,
           content: '哈喽，这是五秒后的回复'
         });
@@ -74,8 +75,9 @@ export default class extends Controller {
 
   public async oauth() {
     const { ctx } = this;
+    const { type, id } = ctx.params;
     const redirect = ctx.query.redirect;
-    const type = ctx.query.type;
+    const oauthType = ctx.query.type;
     const decodedUrl = decodeURIComponent(redirect);
 
     const state = uuid.v4();
@@ -89,10 +91,10 @@ export default class extends Controller {
         100
       );
       // 构造微信 oauth 地址
-      const authorizeURL = await ctx.service.wechat.util.getAuthorizeURL(
-        `${ctx.app.config.host}/wechat/oauth_init`,
+      const authorizeURL = await ctx.service[type].util.getAuthorizeURL(
+        `${ctx.app.config.host}/${type}/${id}/oauth_init`,
         state,
-        Number(type) === 1 ? 'snsapi_userinfo' : 'snsapi_base'
+        Number(oauthType) === 1 ? 'snsapi_userinfo' : 'snsapi_base'
       );
       ctx.redirect(authorizeURL);
     } catch (error) {
@@ -120,13 +122,14 @@ export default class extends Controller {
 
   public async oauthGetUser() {
     const { ctx } = this;
+    const { type } = ctx.params;
     const code = ctx.query.code;
 
     try {
-      const user = await ctx.service.wechat.util.getUserToken(code);
+      const user = await ctx.service[type].util.getUserToken(code);
       if (user.scope === 'snsapi_userinfo') {
         // 非静默授权时，获取用户详细数据
-        const result = await ctx.service.wechat.util.getUserInfo(
+        const result = await ctx.service[type].util.getUserInfo(
           user.openid,
           user.access_token
         );
@@ -142,6 +145,7 @@ export default class extends Controller {
 
   public async getJSConfig() {
     const { ctx } = this;
+    const { type } = ctx.params;
 
     const params = {
       debug: ctx.query.debug || false,
@@ -149,6 +153,6 @@ export default class extends Controller {
       url: decodeURIComponent(ctx.query.url) || ''
     };
 
-    ctx.body = await ctx.service.wechat.util.getJsConfig(params);
+    ctx.body = await ctx.service[type].util.getJsConfig(params);
   }
 }

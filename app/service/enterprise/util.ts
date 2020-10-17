@@ -1,29 +1,46 @@
 import { Service } from 'egg';
 import * as crypto from 'crypto';
+import * as WXBizMsgCrypt from 'wechat-crypto';
 
 export default class extends Service {
-  public async getAccessToken() {
+  public async getParams() {
     const { ctx } = this;
-    const config = ctx.mySession.config;
-    const cacheKey = `wechat_token_${config.appId}`;
+    const { echostr, msg_signature: signature, timestamp, nonce } = ctx.query;
+    const agentCfg = ctx.mySession.config;
+    const cacheKey = `wechat_token_${agentCfg.corpId}_${agentCfg.agentId}`;
+
+    const cryptor = new WXBizMsgCrypt(
+      agentCfg.token,
+      agentCfg.encodingAESKey,
+      agentCfg.corpId
+    );
+
     let token = await ctx.service.utils.cache.get(cacheKey);
     if (!token) {
       const result = await ctx.app.curl(
-        `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${config.appId}&secret=${config.secret}`,
+        `https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${agentCfg.corpId}&corpsecret=${agentCfg.secret}`,
         {
           dataType: 'json'
         }
       );
-      if (result.data.errcode) {
-        throw new Error('get mp access_token error');
+      if (result.data.errcode !== 0) {
+        throw new Error('get qy access_token error');
       }
       token = result.data.access_token;
       if (!token) {
-        throw new Error('get mp access_token error');
+        throw new Error('get qy access_token error');
       }
       await ctx.service.utils.cache.set(cacheKey, token, 60 * 60);
     }
-    return { token };
+    return {
+      echostr,
+      signature,
+      timestamp,
+      nonce,
+      cryptor,
+      agentCfg,
+      token
+    };
   }
 
   public async getAuthorizeURL(
@@ -35,7 +52,7 @@ export default class extends Service {
     const config = ctx.mySession.config;
 
     return `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${
-      config.appId
+      config.corpId
     }&redirect_uri=${encodeURIComponent(
       redirectURI
     )}&response_type=code&scope=${scope}&state=${state}`;
@@ -43,10 +60,10 @@ export default class extends Service {
 
   public async getUserToken(code: string) {
     const { ctx } = this;
-    const config = ctx.mySession.config;
+    const { token } = await this.getParams();
 
     const result = await ctx.app.curl(
-      `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${config.appId}&secret=${config.secret}&code=${code}&grant_type=authorization_code`,
+      `https://qyapi.weixin.qq.com/cgi-bin/user/getuserinfo?access_token=${token}&code=${code}`,
       {
         dataType: 'json'
       }
@@ -73,22 +90,22 @@ export default class extends Service {
   public async getTicket() {
     const { ctx } = this;
     const config = ctx.mySession.config;
-    const cacheKey = `wechat_ticket_${config.appId}`;
+    const cacheKey = `wechat_ticket_${config.corpId}_${config.agentId}`;
     let ticket = await ctx.service.utils.cache.get(cacheKey);
     if (!ticket) {
-      const token = await this.getAccessToken();
+      const { token } = await this.getParams();
       const result = await ctx.app.curl(
-        `https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=${token.token}&type=wx_card`,
+        `https://qyapi.weixin.qq.com/cgi-bin/get_jsapi_ticket?access_token=${token}`,
         {
           dataType: 'json'
         }
       );
       if (result.data.errcode) {
-        throw new Error('get mp ticket error');
+        throw new Error('get enterprise ticket error');
       }
       ticket = result.data.ticket;
       if (!ticket) {
-        throw new Error('get mp ticket error');
+        throw new Error('get enterprise ticket error');
       }
       await ctx.service.utils.cache.set(cacheKey, ticket, 60 * 60);
     }
@@ -140,7 +157,7 @@ export default class extends Service {
 
     return {
       debug: params.debug,
-      appId: config.appId,
+      appId: config.corpId,
       timestamp,
       nonceStr,
       signature,
